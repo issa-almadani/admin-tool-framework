@@ -31,7 +31,20 @@ class AdminController extends Controller
                             
         $orderings = ["order1", "order2", "order3"];
 
-        $data=array('filter1'=>$filter1, 'filter2'=>$filter2, 'filter3'=>$filter3);
+        $originalData = DB::table('admin_tool')
+                        ->select([
+                            'type as type',
+                            'sort_order as sort_order',
+                            'filter as filter',
+                            'key as key',
+                            'title as title',
+                            'auth as auth',
+                            'non-auth as non-auth',
+                            'key_list as key_list',
+                        ])
+                        ->get();
+
+        $data=array('filter1'=>$filter1, 'filter2'=>$filter2, 'filter3'=>$filter3, 'originalData'=>$originalData);
 
         return view('admin_tool')->with($data);
     }

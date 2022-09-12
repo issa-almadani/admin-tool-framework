@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html>
+<body>
+ 
+    <!--Imports for JQUERY stored in public/js and public/css
+        -   Deleting required CSS files will cause styling glitches.
+        -   the jquery-ui.js file is imported in a getScript request below. I made some changes in the code of the actual script that are not present 
+            if the script were to be redownloaded. These changes fix some style glitches that are caused by sorting when the page is scrolled down. 
+            While deleting the file/reimporting it from an online source won't affect functionality, it will affect the styling.  
+    -->
+
+    <script src="public/js/admin/jquery-3.6.0.js"></script> 
+    <script src="public/js/admin/jquery-ui.js"></script> 
+    <link rel="stylesheet" href="public/css/admin/jquery-ui.css">
+
+    <script>
+        // Name of variable must be exactly like the filter name
+        // Variables imported from backend
+        var filter1 = [{"_id": 1, "filter1": 'a'}, {"_id": 2, "filter1": 'b'}];
+        var filter2 =  [{"_id": 1, "filter2" : 'c'}, {"_id": 2, "filter2" : 'd'}, {"_id": 3, "filter2" : 'e'}, {"_id": 4, "filter2" : 'f'}];
+        var filter3 = [{"_id": 1, "filter3" : 'g'}, {"_id": 2, "filter3" : 'h'}, {"_id": 3, "filter3" : 'i'}, {"_id": 4, "filter3" : 'j'}, 
+                       {"_id": 5, "filter3" : 'k'}, {"_id": 6, "filter3" : 'l'}, {"_id": 7, "filter3" : 'm'}, {"_id": 8, "filter3" : 'n'}];
+
+        var filters = ['filter1', 'filter2', 'filter3']
+        var sortOrder = ['id', 'alphanumerically', 'random', 'custom'];
+
+        var originalData = [];
+
+        function getKeyList(name){
+            /*Takes in a filter name as string and returns the actual JSON, safer than using eval*/
+            console.log(name)
+            if (name == "filter1"){
+                return filter1;
+            } else if (name == "filter2"){
+                return filter2;
+            } else if (name == "filter3"){
+                return filter3;
+            }
+        }
+    </script>
+
+    <style>
+        #buttons_reg button{
+            font-size: 25px;
+        }
+        input[type=checkbox]{
+            width:10px;
+        }
+        input{
+            text-align: center;
+            width:80px;
+            font-size: 15px;
+        }
+        select{
+            width: 125px;
+        }
+        .title{
+            width: 250px;
+        }
+        input[type=button], input[type=submit]{
+            width:120px;
+        }
+        ul{
+            list-style-type:none;
+        }
+        #filter_no_reg input, #row_delete input{
+            font-size: 20px;
+        }
+
+        #filter_no_reg input[type=button]{
+            width:200px;
+            font-size: 25px;
+        }
+
+        span.ui-icon-newwin, span.ui-icon-arrowthick-2-n-s{
+            margin: 0 5px 0 0;
+            top: 50%;
+            margin-top: -5px;
+            -ms-transform: scale(1.9); /* IE 9 */
+            -webkit-transform: scale(1.9); /* Chrome, Safari, Opera */
+            transform: scale(1.9);
+        }
+        #tabs-1 li{
+            margin-left: 25px;
+        }
+
+        /* The following styles make the code for the <form> appear as a table */
+        div.table {
+            display:table;
+            text-align: center;
+        }
+        form.tr, div.tr {
+            display:table-row;
+            height: 50px;
+        }
+        span.td{
+            width:5%;
+            display:table-cell;
+            border: 1px solid black;
+            padding: 0px;
+        }
+        option{
+            text-align: center;
+        }
+    </style>
+
+    <div id="tabs" class="ui-tabs ui-corner-all ui-widget ui-widget-content">
+        <ul role="tablist" class="ui-tabs-nav ui-corner-all ui-helper-reset ui-helper-clearfix ui-widget-header">
+            <li role="tab" tabindex="0" class="ui-tabs-tab ui-corner-top ui-state-default ui-tab ui-tabs-active ui-state-active" aria-controls="tabs-1" aria-labelledby="ui-id-15" aria-selected="true" aria-expanded="true"><a href="#tabs-1" role="presentation" tabindex="-1" class="ui-tabs-anchor" id="ui-id-15">Help</a></li>
+            <li role="tab" tabindex="-1" class="ui-tabs-tab ui-corner-top ui-state-default ui-tab" aria-controls="tabs-2" aria-labelledby="ui-id-16" aria-selected="false" aria-expanded="false"><a href="#tabs-2" role="presentation" tabindex="-1" class="ui-tabs-anchor" id="ui-id-16">Registered</a></li>
+        </ul>
+
+        <div id="tabs-1" aria-labelledby="ui-id-15" role="tabpanel" class="ui-tabs-panel ui-corner-bottom ui-widget-content" aria-hidden="false" style="display: block;">
+            <ul style="list-style-type: disc;">
+                <h3 style="padding-top: 20px">Important Notes:</h3>
+                <li style="padding-bottom: 20px">Titles must be unique.</li>
+            </ul>
+        </div>
+
+        <div id="tabs-2" aria-labelledby="ui-id-16" role="tabpanel" class="ui-tabs-panel ui-corner-bottom ui-widget-content" aria-hidden="true" style="display: none;">
+            <!--Table for Rows-->
+            <div id="table_wrapper_reg"></div>
+            
+            <!--Action Buttons-->
+            <div align="center" id="buttons_reg">
+                <ul>
+                    <li>
+                        <button class="ui-button ui-corner-all" type = 'button' onclick = "onSubmitReg()"> Save Changes </button>
+                        <button class="ui-button ui-corner-all" type = 'button' onclick = "make_table_reg(true)"> Discard All Changes </button>
+                    </li>
+                    <br>
+                    <li>
+                    <form id="filter_no_reg">
+                        <button class="ui-button ui-corner-all" type = 'button' onclick = "empty_row_reg(['type', 'Filter', 'Key', 'Title', 'Authorization', 'Sort Order'], 1)"> New Row </button>
+                        <button class="ui-button ui-corner-all" type = "button" onclick="redirect()"> Manually Add Row </button>
+                    </form>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var body = document.body
+        var x = 0; // this variable is used for the "Original Order" column
+
+        function make_table_reg(exist){
+            /** this function initializes/reinitializes a table per the exist value
+             *  PARAMETERS:
+             *  {Boolean} exist - whether or not a "registered" table actually exists -> Note: can probably be removed and make
+             *                                                                           function check automatically by itself
+             */
+            if (exist) {
+                $('.reg').remove()
+                x = 0
+            };
+            
+            window.row_table_reg = document.createElement('div');
+            row_table_reg.setAttribute('class', 'table reg');
+            row_table_reg.setAttribute('id', 'sortablereg');
+            
+
+            make_row_reg("div", ['Type', 'Filter', 'Key', 'Title', 'Authorization', 'Sort Order'], false);
+
+            for (let i of originalData){
+                make_row_reg("form", ['Type', 'Filter', 'Key', 'Title', 'Authorization', 'Sort Order'], i, true);
+            }
+
+            // Again, JQUERY UI needs to be in get script + Makes the rows sortable
+                $("#table_wrapper_reg").append(row_table_reg);
+                $( "#tabs" ).tabs();
+                $( function() {
+                    $("#sortablereg").sortable({
+                        helper: function(e, tr)
+                        {
+                            var $ui = tr.children();
+                            var $cpy = tr.clone();
+                            $cpy.children().each(function(i){
+                                $(this).width($ui.eq(i).width());
+                            });
+                            return $cpy;
+                        },
+                        items: 'form'
+                    });
+                });
+        }
+
+        make_table_reg(false); // Makes initial table at first page load
+
+        function empty_row_reg(rowlst){
+        /** Function creates a new PYTHON row
+         *  PARAMETERS:
+         *  {[String]} rowlst - list of columns to be added (should always be the same columns for all rows + heading)
+         */
+            const trow = document.createElement('form');
+            trow.setAttribute('class', 'tr form ui-state-default');
+
+            for (let i of rowlst){
+                const tdata = document.createElement('span');
+                tdata.setAttribute('class', 'td');
+
+                if (i == "Filter"){
+                    // code to build select for multiple filters
+                    inp = "<select class='Filter' name='Filter'>";
+                    for (let n of filters){
+                        inp += '<option value="'+n+'">'+n+'</option>';
+                    }
+                    inp += "</select>";
+
+                    tdata.innerHTML = inp;
+
+                    // code to make key list depedent on filter
+                    tdata.addEventListener('change', function(e){
+                        hidinp = tdata.parentElement[tdata.parentElement.length-2];
+
+                        strToAdd = "[";
+                        for(let i of getKeyList(e.target.value).slice(0, getKeyList(e.target.value).length-1)){
+                            if(i[Object.keys(i)[1]] == "random"){
+                            } else {
+                                strToAdd += "{";
+                                strToAdd += '"'+i[Object.keys(i)[0]]+'":';
+                                strToAdd += ' "'+i[Object.keys(i)[1]]+'"';
+                                strToAdd += "}, ";
+                            }
+                        }
+                        i = getKeyList(e.target.value)[getKeyList(e.target.value).length-1];
+                        strToAdd += "{";
+                        strToAdd += '"'+i[Object.keys(i)[0]]+'":';
+                        strToAdd += ' "'+i[Object.keys(i)[1]]+'"';
+                        strToAdd += "}";
+                        strToAdd += "]";
+
+                        hidinp.setAttribute('value', strToAdd);
+                    })
+                
+                // code for initial key
+                } else if (i == "Key"){
+                    createFilterMenu("empty_row_reg" + x, tdata, 'reg');
+
+                } else if (i == "Authorization") {
+                    tdata.innerHTML = '<input type = "checkbox" class="' + i + '" name="'+i+'" placeholder="'+i+'" value="'+0+'"">';
+
+                } else if (i == "Title"){
+                    tdata.innerHTML = '<input type = "text" class="title" name="'+i+'" placeholder="'+i+'">';
+
+                } else if (i == "Sort Order") {
+                        inp = "<select class='sort_order' name='sort_order'>";
+
+                        var lstToIter = sortOrder;
+
+                        for (let n of lstToIter) {
+                            inp += '<option value="'+n+'">'+n+'</option>';
+                        }
+                        inp += "</select>";
+                        tdata.innerHTML = inp;
+
+                } else if (i == "type"){
+                    // can be extended for other types
+                    tdata.setAttribute('style', 'display: none');
+                    tdata.innerHTML = '<input type = "hidden" class="'+ i +'" name="'+i+'" value="default" readonly>';
+                
+                } else {
+                    tdata.innerHTML = '<input type = "text" class="' + i + '" name="'+i+'" placeholder="'+i+'">';
+                };
+                
+                trow.appendChild(tdata);
+            };
+            
+            strToAdd = "["
+            console.log(filters[0])
+            for(let i of getKeyList(filters[0])){
+                if(i[Object.keys(i)[1]] == "random"){
+                } else {
+                    strToAdd += "{"
+                    strToAdd += '"'+i[Object.keys(i)[0]]+'":'
+                    strToAdd += ' "'+i[Object.keys(i)[1]]+'"'
+                    strToAdd += "}, "
+                }
+            }
+            
+            i = getKeyList(filters[0])[getKeyList(filters[0]).length-1]
+            strToAdd += "{"
+            strToAdd += '"'+i[Object.keys(i)[0]]+'":'
+            strToAdd += ' "'+i[Object.keys(i)[1]]+'"'
+            strToAdd += "}"
+            strToAdd += "]"
+
+            const tlst = document.createElement('input')
+            tlst.setAttribute('type', 'hidden')
+            tlst.setAttribute('name', 'key_list')
+            tlst.setAttribute('value', strToAdd)
+            trow.appendChild(tlst)
+
+            // create delete button for row
+            const tdlt = document.createElement('span')
+            tdlt.setAttribute('class', 'td')
+            tdlt.innerHTML = '<button type="button" onclick="delete_row(this)">Delete</button>'
+            trow.appendChild(tdlt);
+
+            // append ordering of row 
+            const tnum = document.createElement('span')
+            tnum.setAttribute('class', 'td order ui-state-default ui-corner-all')
+            tnum.setAttribute('style', 'cursor:pointer;')
+            tnum.innerHTML = '<span class="ui-icon ui-icon-arrowthick-2-n-s" style="float:left; margin-top: 8%; margin-left:10%;"></span><p>' + x + '<p>'
+            x += 1
+            trow.insertBefore(tnum, trow.firstChild)
+
+            // add row to table
+            row_table_reg.appendChild(trow);
+        };
+        
+
+        // used to load pre-written rows into table from database
+        function make_row_reg(type, rowlst, placeholder, header){
+
+            const trow = document.createElement(type);
+            trow.setAttribute('class', 'tr ' + type + ' ui-state-default')
+
+
+            // each cell is made seperately via this function to accomodate for php objects
+            function make_cell(datacell, dbcell, row_type){
+
+                
+                const tdata = document.createElement('span')
+                tdata.setAttribute('class', 'td')
+                    // check-box specific
+                    if(type == "form"){
+                        if (datacell == "Authorization"){
+                            tdata.innerHTML = '<input type = "checkbox" name = "'+datacell+'" value = "'+ dbcell +'">';
+
+
+                        // makes filter rows (multiple) 
+                        } else if (datacell == "Filter" && dbcell) {
+
+                            inp = "<select class='Filter' name='Filter'>"
+                            for (let n of filters){
+                                inp += '<option value="'+n+'"'+ (n == dbcell ? "selected" : "") +'>'+n+'</option>'
+                            }
+                            inp += "</select>"
+
+                            tdata.innerHTML = inp
+
+                            // code to make key list depedent on filter
+                            tdata.addEventListener('change', function(e){
+                                hidinp = tdata.parentElement[tdata.parentElement.length-2]
+
+                                strToAdd = "["
+                                for(let i of getKeyList(e.target.value).slice(0, getKeyList(e.target.value).length-1)){
+                                    if(i[Object.keys(i)[1]] == "random"){
+                                    } else {
+                                        strToAdd += "{"
+                                        strToAdd += '"'+i[Object.keys(i)[0]]+'":'
+                                        strToAdd += ' "'+i[Object.keys(i)[1]]+'"'
+                                        strToAdd += "}, "
+                                    }
+                                }
+                                i = getKeyList(e.target.value)[getKeyList(e.target.value).length-1]
+                                strToAdd += "{"
+                                strToAdd += '"'+i[Object.keys(i)[0]]+'":'
+                                strToAdd += ' "'+i[Object.keys(i)[1]]+'"'
+                                strToAdd += "}"
+                                strToAdd += "]"
+
+                                hidinp.setAttribute('value', strToAdd)
+                            })
+
+                        // code to initialize key select based on db
+                        } else if (datacell == "Key" && dbcell){
+                            createFilterMenu("make_row_reg" + x, tdata, 'reg', dbcell);
+
+                        // code for title
+                        } else if (datacell == "Title") {
+                            tdata.innerHTML = '<input class = "title" type = "text" name = "'+datacell+'" value = "'+ dbcell +'">'
+
+                        // code for source (a.k.a sort order)
+                        } else if (datacell == "Source") {
+                            inp = "<select class='source' name='source'>"
+
+                            var lstToIter = sortOrder
+
+                            for (let n of lstToIter) {
+                                inp += '<option value="'+n+'"'+ (n == dbcell ? "selected" : "") +'>'+n+'</option>'
+                            }
+                            inp += "</select>"
+                            tdata.innerHTML = inp
+
+
+                        // code for the coding language code is written in
+                        } else if (datacell == "Type"){
+                            tdata.setAttribute('style', 'display: none')
+                            tdata.innerHTML = '<input type = "hidden" name = "'+datacell+'" value = "'+ dbcell +'" readonly>'
+                        
+                        } else {
+                                tdata.innerHTML = '<input type = "text" name = "'+datacell+'" value = "'+ dbcell +'">';
+                        }
+                } else {
+                    if (datacell == "Type"){
+                        tdata.setAttribute('style', 'display: none')
+                    }
+                    else {
+                        tdata.innerHTML = datacell
+                    }
+                }
+
+                // append row
+                trow.appendChild(tdata)
+            }
+
+
+            var plclst = ['type', 'row_type', 'filter', 'key', 'title', 'auth', 'non-auth', 'source']
+
+            for (let i = 0; i < rowlst.length; i++){
+                make_cell(rowlst[i], placeholder[plclst[i]], placeholder['type'])
+            }
+                
+            if (header){
+                const tnum = document.createElement('span')
+                tnum.setAttribute('class', 'td order ui-state-default ui-corner-all')
+                tnum.setAttribute('style', 'cursor:pointer;')
+                tnum.innerHTML = '<span class="ui-icon ui-icon-arrowthick-2-n-s" style="float:left; margin-top: 8%; margin-left:10%;"></span><p>' + x + '<p>'
+                x += 1
+                trow.insertBefore(tnum, trow.firstChild)
+
+                const tlst = document.createElement('input')
+                tlst.setAttribute('type', 'hidden')
+                tlst.setAttribute('value', placeholder['key_list'])
+                tlst.setAttribute('name', 'key_list')
+                trow.appendChild(tlst)
+
+                const tdlt = document.createElement('span')
+                tdlt.setAttribute('class', 'td')
+                tdlt.innerHTML = '<button type="button" onclick="delete_row(this)">Delete</button>'
+                trow.appendChild(tdlt);
+            } else {
+                const torder = document.createElement('span')
+                torder.setAttribute('class', 'td order')
+                torder.innerHTML = '<p> Original Order <p>'
+                x += 1
+                trow.insertBefore(torder, trow.firstChild)
+            };
+            row_table_reg.appendChild(trow);
+        }
+
+
+        // delete row function for delete row button
+        function delete_row(r){
+            r.parentNode.parentNode.parentNode.removeChild(r.parentNode.parentNode);
+        };
+
+        // Submit function sends a post request as a string with different special characters seperating the fields and rows
+        // The way it's written helps accomodate for any number of filters and keys.
+        function onSubmitReg(){
+            var print_array = ""
+                
+                function verifyUniqueTitle(){
+                    var verifyTitles = [];
+                    for(let n of Array.from(document.getElementsByClassName("form")).filter($val => $val[5].value == 1)){
+                        verifyTitles.push(n[4].value);
+                    };
+                    return (new Set(verifyTitles).size != verifyTitles.length)
+                };
+                if (verifyUniqueTitle()){
+                    window.alert("Please make sure all row titles are unique!")
+                } else {
+                    for (let n = 0; n < Array.from(document.getElementsByClassName("form")).filter($val => $val[5].value == 1).length; n++){
+                        var inputs = Array.from(document.getElementsByClassName("form")).filter($val => $val[5].value == 1)[n].elements;
+                        for (let i = 0; i < inputs.length - 1; i++){
+                            if (inputs[i].name == "Reg"){
+                                print_array += inputs[i].value + "//" 
+                            } else if (inputs[i].name == "Authorization"){
+                                print_array += inputs[i].value + "//" 
+                            } else if (inputs[i].name == "key_list"){
+                                print_array += inputs[i].value 
+                            } else if (inputs[i].name == "Filter" || inputs[i].name == "Key") {
+                                print_array += inputs[i].value + "//"
+                            } else {
+                                print_array += inputs[i].value + "//"
+                            };
+                        }
+                        if (Array.from(document.getElementsByClassName("form")).filter($val => $val[5].value == 1).length != 1 && n != Array.from(document.getElementsByClassName("form")).filter($val => $val[5].value == 1).length - 1){
+                            print_array += "||"
+                        };
+                    }
+                // $.post('/admin/dbupdate', {"append": print_array})
+                confirm("Saving requires a database to push data to. Save request will not take effect.")
+            }
+            // setTimeout(() => { make_table_reg(true); }, 300)
+        };
+        
+        // Redirects for the make laravel row button
+        function redirect(){
+            if (confirm("You will now be redirected. Any unsaved changes will be lost.")) {
+                window.location = '/admin/rowbyform';
+            }
+        }
+       
+    </script>
+
+
+    <script>
+        function createFilterMenu(div_id, container, reg_unreg, dbcell = "random", value = "random"){
+            const filterdiv = document.createElement('div');
+            filterdiv.setAttribute('id', div_id);
+            filterdiv.setAttribute('class', reg_unreg);
+            filterdiv.setAttribute('title', 'Choose Filters:');
+
+            document.body.appendChild(filterdiv);  
+
+            const button = document.createElement('button');
+            button.setAttribute('value', value);
+            button.innerHTML = dbcell;
+            button.setAttribute('type', 'button');
+            button.setAttribute('id', 'button' + div_id);
+            button.setAttribute('name', 'Key');
+
+            button.addEventListener('click', function(e){
+                if(container.parentElement[container.parentElement.length-2].value != "null"){
+                    filterdiv.innerHTML = "";
+
+                    ind = Array.from(container.parentElement).indexOf(e.target);
+                    filterdiv.setAttribute("overflow-y", "scroll");
+
+                    protoOrigin = getKeyList(Array.from(container.parentElement)[ind - 1].value);
+                    protoChosen = Array.from(JSON.parse(container.parentElement[container.parentElement.length - 2].value));
+
+                    originalKeys = {};
+                    chosenKeys = {};
+
+                    for(let n of protoOrigin){
+                        originalKeys[n['_id']] = n[Array.from(container.parentElement)[ind - 1].value];
+                    }
+
+                    for(let n of protoChosen){
+                        chosenKeys[Object.keys(n)] = n[Object.keys(n)];
+                    }
+
+                    // const currKey = document.createElement('select')
+                    // currKey.setAttribute('id', 'currKey' + div_id)
+
+                    // const option = document.createElement('option')
+                    // option.innerHTML = "random"
+                    // option.setAttribute('value', 'random')
+
+                    // currKey.appendChild(option)
+
+                    // for(let n of Object.keys(originalKeys)){
+                    //     const option = document.createElement('option')
+                    //     option.innerHTML = originalKeys[n]
+                    //     option.setAttribute('value', n)
+                    //     console.log(n)
+                    //     console.log(button.value)
+                    //     if(n == button.value){
+                    //         option.selected = true
+                    //     }
+                    //     currKey.appendChild(option)
+                    // }
+                    
+                    // filterdiv.appendChild(currKey)
+
+                    // linebreak = document.createElement("br")
+                    // filterdiv.appendChild(linebreak)
+                    // linebreak = document.createElement("br")
+                    // filterdiv.appendChild(linebreak)
+
+
+                    for(let n of Object.keys(originalKeys)){
+                        const keySelect = document.createElement('input');
+                        keySelect.setAttribute('type', 'checkbox');
+                        keySelect.setAttribute('style', 'height:20px; width:20px');
+                        keySelect.setAttribute('class', div_id + "filters");
+                        keySelect.setAttribute('value', n);
+                        if(n in chosenKeys){
+                            keySelect.click(); 
+                        }
+                        
+                        const label = document.createElement('label');
+                        label.innerHTML = originalKeys[n];
+                        label.setAttribute('style', 'padding-left: 10px; font-size: 20px');
+                        label.setAttribute('for', div_id + n);
+                        filterdiv.appendChild(keySelect);
+
+                        filterdiv.appendChild(label);
+
+                        linebreak = document.createElement("br");
+                        filterdiv.appendChild(linebreak);
+                
+                    }
+                }
+            })
+
+            container.appendChild(button);
+
+            $(document).ready(function(){
+                    $( "#" + div_id ).dialog({
+                        autoOpen: false,
+                        width: 700,
+                        height: 400,
+                        buttons: [
+                            {
+                                text: "Ok",
+                                click: function() {
+                                    protoFilters = document.getElementsByClassName( this.id + "filters");
+                                    if(protoFilters.length == 0){
+                                        $( this ).dialog( "close" );
+                                    } else {
+                                        protoChosen = Array.from(JSON.parse(container.parentElement[container.parentElement.length - 2].value));
+                                        chosenKeys = {};
+                                        for(let n of protoChosen){
+                                            chosenKeys[Object.keys(n)] = n[Object.keys(n)];
+                                        }
+
+                                        ind = Array.from(container.parentElement).indexOf(document.getElementById("button" + this.id));
+
+                                        protoOrigin = getKeyList(Array.from(container.parentElement)[ind - 1].value);
+                                        originalKeys = {};
+
+                                        for(let n of protoOrigin){
+                                            originalKeys[n['_id']] = n[Array.from(container.parentElement)[ind - 1].value];
+                                        }
+
+                                        filtersAsArray = [];
+                                        
+                                        for(let filter of protoFilters){
+                                            if(filter.checked){
+                                                ind = filter.value;
+                                                val = originalKeys[ind];
+                                                valDict = {};
+                                                valDict[ind] = val;
+                                                filtersAsArray.push(valDict);
+                                            }
+                                        }
+
+                                        // container.childNodes[0].innerHTML = originalKeys[document.getElementById( "currKey" + this.id ).value]
+                                        // container.childNodes[0].setAttribute('value', document.getElementById( "currKey" + this.id ).value)
+                                        container.parentElement[container.parentElement.length - 2].value = JSON.stringify(filtersAsArray);
+                                        $( this ).dialog( "close" );
+                                    }
+                                }
+                            },
+                        ]
+                    });
+
+                    // Link to open the dialog
+                    $( "#button" + div_id ).click(function( event ) {
+                        $( "#" + div_id ).dialog( "open" );
+                        event.preventDefault();
+                    });
+                });  
+        }
+    </script>
+   
+</body>
+</html>
